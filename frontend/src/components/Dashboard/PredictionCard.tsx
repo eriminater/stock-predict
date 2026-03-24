@@ -127,7 +127,7 @@ function AdrPtsBlock({ adr, pts, changePct }: {
         <div>
           <div className="text-[8.5px] text-text-muted uppercase font-semibold leading-tight">ADR</div>
           <div className="font-mono text-[10.5px] font-medium text-text-secondary">
-            ${adr.price.toFixed(2)}
+            ¥{Math.round(adr.price).toLocaleString('ja-JP')}
             {changePct != null && (
               <span> ({changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%)</span>
             )}
