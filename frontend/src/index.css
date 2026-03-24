@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #f8f9fb;
+  --color-surface2: #f0f2f6;
+  --color-border: #e4e7ef;
+  --color-border2: #d0d5e3;
+  --color-text-primary: #0d1117;
+  --color-text-secondary: #4a5568;
+  --color-text-muted: #8a94a6;
+  --color-accent: #1a56db;
+  --color-accent-light: #ebf0ff;
+  --color-accent2: #0ea5e9;
+  --color-up: #0f9e6e;
+  --color-up-bg: #ecfdf5;
+  --color-down: #e53e3e;
+  --color-down-bg: #fff5f5;
+  --color-gold: #d4a017;
+  --color-pink: #e91e8c;
+  --font-display: 'DM Sans', 'Noto Sans JP', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease;
+}
+
+.animate-pulse-dot {
+  animation: pulse 2s infinite;
+}
