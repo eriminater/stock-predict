@@ -7,28 +7,17 @@ from datetime import datetime, timedelta
 
 
 def fetch_ticker_name(ticker: str) -> str:
-    """Fetch company name via Yahoo Finance v8 chart meta (more reliable than yfinance.info)."""
-    import asyncio
-
-    async def _fetch():
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
-        try:
-            async with httpx.AsyncClient(timeout=10, headers=headers) as c:
-                r = await c.get(url)
-                data = r.json()
-                meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
-                return meta.get("shortName") or meta.get("longName") or ""
-        except Exception:
-            return ""
-
+    """Fetch company name via Yahoo Finance v8 chart meta (sync httpx)."""
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
     try:
-        return asyncio.run(_fetch())
-    except RuntimeError:
-        # Already inside an event loop (called from async context via to_thread)
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            return pool.submit(asyncio.run, _fetch()).result()
+        with httpx.Client(timeout=10, headers=headers) as c:
+            r = c.get(url)
+            data = r.json()
+            meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
+            return meta.get("shortName") or meta.get("longName") or ""
+    except Exception:
+        return ""
 
 
 async def fetch_jp_name_from_kabutan(jp_ticker: str) -> str:
