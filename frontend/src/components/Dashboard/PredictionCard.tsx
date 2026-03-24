@@ -109,12 +109,6 @@ export default function PredictionCard({ label, dotColor, value, liveValue, extr
   );
 }
 
-function formatPtsTime(raw: string): string {
-  // kabutan format: "19:15　03/23" → "03/23 19:15"
-  const parts = raw.trim().split(/[\s\u3000]+/);
-  if (parts.length === 2) return `${parts[1]} ${parts[0]}`;
-  return raw;
-}
 
 function AdrPtsBlock({ adr, pts, changePct }: {
   adr: AdrPts['adr'] | undefined;
@@ -129,27 +123,27 @@ function AdrPtsBlock({ adr, pts, changePct }: {
       {adr?.price != null && (
         <div>
           <div className="text-[8.5px] text-text-muted uppercase font-semibold leading-tight">ADR</div>
-          <div className="font-mono text-[10.5px] font-medium text-text-secondary">
+          <div className="font-mono text-[10.5px] font-medium text-text-secondary truncate">
             ¥{Math.round(adr.price).toLocaleString('ja-JP')}
+            {changePct != null && (
+              <span className={`ml-0.5 ${pctColor(changePct)}`}>
+                ({changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%)
+              </span>
+            )}
           </div>
-          {changePct != null && (
-            <div className={`font-mono text-[10px] font-semibold ${pctColor(changePct)}`}>
-              {changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%
-            </div>
-          )}
         </div>
       )}
       {pts?.price != null && (
         <div>
           <div className="text-[8.5px] text-text-muted uppercase font-semibold leading-tight">PTS</div>
-          <div className="font-mono text-[10.5px] font-medium text-text-secondary">
+          <div className="font-mono text-[10.5px] font-medium text-text-secondary truncate">
             ¥{pts.price.toLocaleString()}
+            {pts.change_pct != null && (
+              <span className={`ml-0.5 ${pctColor(pts.change_pct)}`}>
+                ({pts.change_pct > 0 ? '+' : ''}{pts.change_pct.toFixed(2)}%)
+              </span>
+            )}
           </div>
-          {pts.change_pct != null && (
-            <div className={`font-mono text-[10px] font-semibold ${pctColor(pts.change_pct)}`}>
-              {pts.change_pct > 0 ? '+' : ''}{pts.change_pct.toFixed(2)}%
-            </div>
-          )}
         </div>
       )}
     </div>

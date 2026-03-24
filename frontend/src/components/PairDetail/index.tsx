@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { Pair, Prediction } from '../../types';
 import { getPredictions } from '../../services/api';
 import FormulaCards from './FormulaCards';
-import AdrPtsBar from '../AdrPtsBar';
 import PredictionChart from './PredictionChart';
 import RatioChart from './RatioChart';
 import CorrelationDisplay from './CorrelationDisplay';
@@ -93,12 +92,6 @@ export default function PairDetail({ pair, initializing, onInitializingDone }: P
     <div className="animate-fadeIn">
       <FormulaCards predictions={predictions} usTicker={pair.us_ticker} jpTicker={pair.jp_ticker} />
 
-      <div className="border border-border rounded-xl px-5 py-3 mb-6">
-        <AdrPtsBar
-          pairId={pair.id}
-          className="flex items-center gap-4 flex-wrap"
-        />
-      </div>
 
       <div className="border border-border rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
