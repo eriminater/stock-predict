@@ -65,7 +65,7 @@ export interface LivePrediction {
 
 export interface AdrPts {
   adr: { price: number | null; change_pct: number | null; date: string | null };
-  pts: { price: number | null; time: string | null };
+  pts: { price: number | null; time: string | null; change_pct: number | null };
 }
 
 export interface PresetPair {

@@ -121,6 +121,9 @@ function AdrPtsBlock({ adr, pts, changePct }: {
   pts: AdrPts['pts'] | undefined;
   changePct: number | null | undefined;
 }) {
+  const pctColor = (v: number | null | undefined) =>
+    v == null ? '' : v > 0 ? 'text-up' : v < 0 ? 'text-down' : '';
+
   return (
     <div className="border-t border-border pt-2 mt-1.5 grid grid-cols-2 gap-1">
       {adr?.price != null && (
@@ -128,10 +131,12 @@ function AdrPtsBlock({ adr, pts, changePct }: {
           <div className="text-[8.5px] text-text-muted uppercase font-semibold leading-tight">ADR</div>
           <div className="font-mono text-[10.5px] font-medium text-text-secondary">
             ¥{Math.round(adr.price).toLocaleString('ja-JP')}
-            {changePct != null && (
-              <span> ({changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%)</span>
-            )}
           </div>
+          {changePct != null && (
+            <div className={`font-mono text-[10px] font-semibold ${pctColor(changePct)}`}>
+              {changePct > 0 ? '+' : ''}{changePct.toFixed(2)}%
+            </div>
+          )}
         </div>
       )}
       {pts?.price != null && (
@@ -139,8 +144,12 @@ function AdrPtsBlock({ adr, pts, changePct }: {
           <div className="text-[8.5px] text-text-muted uppercase font-semibold leading-tight">PTS</div>
           <div className="font-mono text-[10.5px] font-medium text-text-secondary">
             ¥{pts.price.toLocaleString()}
-            {pts.time && <span className="text-text-muted"> {formatPtsTime(pts.time)}</span>}
           </div>
+          {pts.change_pct != null && (
+            <div className={`font-mono text-[10px] font-semibold ${pctColor(pts.change_pct)}`}>
+              {pts.change_pct > 0 ? '+' : ''}{pts.change_pct.toFixed(2)}%
+            </div>
+          )}
         </div>
       )}
     </div>

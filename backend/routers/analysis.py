@@ -293,20 +293,23 @@ async def get_adr_pts(pair_id: str):
     data = await _fetch_adr_pts_nikkei225jp(pair["jp_ticker"])
 
     adr: dict = {"price": None, "change_pct": None, "date": None}
-    pts: dict = {"price": None, "time": None}
+    pts: dict = {"price": None, "time": None, "change_pct": None}
+
+    # JP前日終値（5時の終値）を基準に増減率を計算
+    jp_prices = _get_sorted_prices(sb, pair["jp_ticker"], 2)
+    jp_prev = jp_prices[0].get("close") if jp_prices else None
 
     if data.get("adr_price"):
         adr["price"] = data["adr_price"]
         adr["date"] = data.get("adr_date")
-        # change_pct: ADR円換算 vs JP前日終値
-        jp_prices = _get_sorted_prices(sb, pair["jp_ticker"], 2)
-        jp_prev = jp_prices[0].get("close") if jp_prices else None
         if jp_prev and jp_prev > 0:
             adr["change_pct"] = round((data["adr_price"] - jp_prev) / jp_prev * 100, 2)
 
     if data.get("pts_price"):
         pts["price"] = data["pts_price"]
         pts["time"] = data.get("pts_time")
+        if jp_prev and jp_prev > 0:
+            pts["change_pct"] = round((data["pts_price"] - jp_prev) / jp_prev * 100, 2)
 
     return {"adr": adr, "pts": pts}
 

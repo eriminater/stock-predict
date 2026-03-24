@@ -57,12 +57,13 @@ export default function PredictionHero({ pair }: Props) {
     }
   }, [pair.id, pair.jp_ticker]);
 
-  // 9:00〜9:30 JSTの間、60秒ごとに actual_open をポーリング
+  // 9:00〜9:30 JSTの間、60秒ごとに actual_open と ADR/PTS をポーリング
   useEffect(() => {
     const poll = setInterval(() => {
       if (!isInPollingWindow()) return;
       getPredictions(pair.id).then(setPredictions).catch(() => {});
       fetchActualOpen();
+      getAdrPts(pair.id).then(setAdrPts).catch(() => {});
     }, 60_000);
     return () => clearInterval(poll);
   }, [pair.id, pair.jp_ticker]);
