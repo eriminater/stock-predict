@@ -6,27 +6,47 @@ import PairDetail from './components/PairDetail';
 import PairResearch from './components/PairResearch';
 import AIAnalyst from './components/AIAnalyst';
 import Settings from './components/Settings';
-import { getPairs, createPair } from './services/api';
+import { getPairs, createPair, getQuotaStatus, refreshPairNames } from './services/api';
 import type { Pair } from './types';
 
 export default function App() {
   const [pairs, setPairs] = useState<Pair[]>([]);
+  const [pairsLoading, setPairsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [initializingPairId, setInitializingPairId] = useState<string | null>(null);
+  const [quota, setQuota] = useState<Record<string, unknown> | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(true);
+  const [quotaError, setQuotaError] = useState(false);
+
+  const loadQuota = useCallback(() => {
+    setQuotaLoading(true);
+    setQuotaError(false);
+    getQuotaStatus()
+      .then(data => { setQuota(data); setQuotaLoading(false); })
+      .catch(() => { setQuotaError(true); setQuotaLoading(false); });
+  }, []);
 
   const loadPairs = useCallback(() => {
     getPairs()
       .then(data => {
         setPairs(data);
+        setPairsLoading(false);
         setLastUpdated(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
+        // 名前が未設定のペアはバックグラウンドで一度だけ取得
+        const missingNames = data.filter(p => !p.display_name_jp || !p.display_name_us);
+        if (missingNames.length > 0) {
+          Promise.allSettled(missingNames.map(p => refreshPairNames(p.id)))
+            .then(() => getPairs().then(updated => setPairs(updated)).catch(() => {}));
+        }
       })
-      .catch(() => {});
+      .catch(() => { setPairsLoading(false); });
   }, []);
 
   useEffect(() => {
     loadPairs();
-  }, [loadPairs]);
+    loadQuota();
+  }, [loadPairs, loadQuota]);
 
   const handleRegisterPair = async (us: string, jp: string, ind: string) => {
     try {
@@ -60,7 +80,12 @@ export default function App() {
         {/* Dashboard */}
         {activeTab === 'dashboard' && (
           <div className="animate-fadeIn">
-            {pairs.length === 0 ? (
+            {pairsLoading ? (
+              <div className="text-center py-20 text-text-muted">
+                <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-sm">データ読み込み中...</p>
+              </div>
+            ) : pairs.length === 0 ? (
               <div className="text-center py-20 text-text-muted">
                 <p className="text-lg mb-2">ペアが登録されていません</p>
                 <p className="text-sm">設定画面からペアを登録してください</p>
@@ -107,6 +132,10 @@ export default function App() {
             onPairsChange={loadPairs}
             onPairInitializing={handlePairInitializing}
             onInitializingDone={handleInitializingDone}
+            quota={quota}
+            quotaLoading={quotaLoading}
+            quotaError={quotaError}
+            onReloadQuota={loadQuota}
           />
         )}
       </main>

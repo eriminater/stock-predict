@@ -1,12 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Pair } from '../../types';
-import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, getQuotaStatus, setPreferredModel, validateTicker } from '../../services/api';
+import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, setPreferredModel, validateTicker } from '../../services/api';
+
+type QuotaData = {
+  calls_today: number;
+  errors_429_today: number;
+  estimated_remaining: number;
+  preferred_model: string;
+  last_model: string | null;
+  last_call_at: string | null;
+  limits: Record<string, number>;
+};
 
 interface Props {
   pairs: Pair[];
   onPairsChange: () => void;
   onPairInitializing?: (pairId: string) => void;
   onInitializingDone?: () => void;
+  quota: QuotaData | null;
+  quotaLoading: boolean;
+  quotaError: boolean;
+  onReloadQuota: () => void;
 }
 
 const MODEL_OPTIONS = [
@@ -14,7 +28,7 @@ const MODEL_OPTIONS = [
   { id: 'gemini-2.5-flash',      label: '2.5 Flash',      rpd: 250,  note: 'バランス' },
 ];
 
-export default function Settings({ pairs, onPairsChange, onPairInitializing, onInitializingDone }: Props) {
+export default function Settings({ pairs, onPairsChange, onPairInitializing, onInitializingDone, quota, quotaLoading, quotaError, onReloadQuota }: Props) {
   const [usTicker, setUsTicker] = useState('');
   const [jpTicker, setJpTicker] = useState('');
   const [indTicker, setIndTicker] = useState('');
@@ -24,32 +38,11 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
   const [fetchStatus, setFetchStatus] = useState('');
   const [toast, setToast] = useState('');
   const [suggestions, setSuggestions] = useState<{ ticker: string; name: string }[]>([]);
-  const [quota, setQuota] = useState<{
-    calls_today: number;
-    errors_429_today: number;
-    estimated_remaining: number;
-    preferred_model: string;
-    last_model: string | null;
-    last_call_at: string | null;
-    limits: Record<string, number>;
-  } | null>(null);
-  const [quotaError, setQuotaError] = useState(false);
-  const [quotaLoading, setQuotaLoading] = useState(true);
-
-  const loadQuota = () => {
-    setQuotaLoading(true);
-    setQuotaError(false);
-    getQuotaStatus()
-      .then(data => { setQuota(data); setQuotaLoading(false); })
-      .catch(() => { setQuotaError(true); setQuotaLoading(false); });
-  };
-
-  useEffect(() => { loadQuota(); }, []);
 
   const handleModelChange = async (modelId: string) => {
     try {
       await setPreferredModel(modelId);
-      loadQuota();
+      onReloadQuota();
     } catch { /* ignore */ }
   };
 
@@ -82,7 +75,30 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
 
   const handleRegister = async () => {
     if (!usTicker || !jpTicker || !indTicker) return;
+    // race condition対策: バリデーションが未完了なら直前に再検証
     setLoading(true);
+    setValidating(true);
+    try {
+      const [usValid, jpValid, indValid] = await Promise.all([
+        validateTicker(usTicker),
+        validateTicker(jpTicker),
+        validateTicker(indTicker),
+      ]);
+      const errs = {
+        us: usValid ? '' : `"${usTicker}" は無効なティッカーです`,
+        jp: jpValid ? '' : `"${jpTicker}" は無効なティッカーです`,
+        ind: indValid ? '' : `"${indTicker}" は無効なティッカーです`,
+      };
+      setTickerErrors(errs);
+      if (!usValid || !jpValid || !indValid) {
+        setLoading(false);
+        setValidating(false);
+        return;
+      }
+    } catch {
+      // 検証エラーは無視して続行
+    }
+    setValidating(false);
     try {
       const newPair = await createPair({
         us_ticker: usTicker.toUpperCase(),
@@ -167,7 +183,7 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
         )}
 
         {/* Single-row: inputs + AI button + register button */}
-        <div className="flex flex-wrap items-end gap-3 mb-2">
+        <div className="flex flex-wrap items-start gap-3 mb-2">
           <div className="flex-1 min-w-[120px]">
             <label className="text-[11px] font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
               <span className="bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5 text-[10px] font-bold text-sky-700">US アメリカ株</span>
@@ -226,21 +242,24 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 pb-0.5">
-            <button
-              onClick={handleAiIndustry}
-              disabled={isMaxPairs || !usTicker || !jpTicker}
-              className="px-3 py-2 bg-surface text-text-secondary border border-border rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 hover:border-accent hover:text-accent transition-colors"
-            >
-              AI推論
-            </button>
-            <button
-              onClick={handleRegister}
-              disabled={loading || validating || isMaxPairs || !usTicker || !jpTicker || !indTicker || !!tickerErrors.us || !!tickerErrors.jp || !!tickerErrors.ind}
-              className="flex items-center gap-1.5 bg-accent text-white border-none rounded-lg px-5 py-2 text-sm font-medium cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-all whitespace-nowrap"
-            >
-              {loading ? '登録中...' : '登録'}
-            </button>
+          <div className="flex flex-col justify-start">
+            <div className="h-[22px]" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAiIndustry}
+                disabled={isMaxPairs || !usTicker || !jpTicker}
+                className="px-3 py-2 bg-surface text-text-secondary border border-border rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap disabled:opacity-50 hover:border-accent hover:text-accent transition-colors"
+              >
+                AI推論
+              </button>
+              <button
+                onClick={handleRegister}
+                disabled={loading || validating || isMaxPairs || !usTicker || !jpTicker || !indTicker || !!tickerErrors.us || !!tickerErrors.jp || !!tickerErrors.ind}
+                className="flex items-center justify-center bg-accent text-white border-none rounded-lg px-8 py-2 text-sm font-medium cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-all whitespace-nowrap min-w-[90px]"
+              >
+                {loading ? '登録中...' : '登録'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -280,7 +299,7 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
             AI利用状況（Gemini API）
           </div>
-          <button onClick={loadQuota} className="text-[11px] text-accent border border-blue-200 bg-accent-light rounded px-2 py-0.5 cursor-pointer">
+          <button onClick={onReloadQuota} className="text-[11px] text-accent border border-blue-200 bg-accent-light rounded px-2 py-0.5 cursor-pointer">
             更新
           </button>
         </div>

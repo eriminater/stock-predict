@@ -48,6 +48,39 @@ async def delete_pair(pair_id: str):
     return {"status": "deleted"}
 
 
+@router.post("/{pair_id}/refresh-names")
+async def refresh_display_names(pair_id: str):
+    """Fetch and update display names for a pair (useful for pairs missing names)."""
+    import asyncio
+    from services.yfinance_client import fetch_ticker_name, fetch_jp_name_from_kabutan
+
+    sb = get_supabase()
+    pair = sb.table("pairs").select("*").eq("id", pair_id).single().execute().data
+    if not pair:
+        raise HTTPException(404, "Pair not found")
+
+    updates = {}
+    if not pair.get("display_name_us"):
+        name = await asyncio.to_thread(fetch_ticker_name, pair["us_ticker"])
+        if name:
+            updates["display_name_us"] = name
+    if not pair.get("display_name_jp"):
+        name = await fetch_jp_name_from_kabutan(pair["jp_ticker"])
+        if not name:
+            name = await asyncio.to_thread(fetch_ticker_name, pair["jp_ticker"])
+        if name:
+            updates["display_name_jp"] = name
+    if not pair.get("display_name_industry"):
+        name = await asyncio.to_thread(fetch_ticker_name, pair["industry_ticker"])
+        if name:
+            updates["display_name_industry"] = name
+
+    if updates:
+        sb.table("pairs").update(updates).eq("id", pair_id).execute()
+        logger.info(f"Refreshed display names for {pair_id}: {updates}")
+    return {"updated": updates}
+
+
 @router.post("/{pair_id}/initialize")
 async def initialize_pair(pair_id: str):
     """Fetch 180-day data, calculate predictions, and backfill for a new pair."""
@@ -66,14 +99,17 @@ async def initialize_pair(pair_id: str):
 
     # Step 0: Fetch and save display names if not already set
     try:
-        from services.yfinance_client import fetch_ticker_name
+        from services.yfinance_client import fetch_ticker_name, fetch_jp_name_from_kabutan
         updates = {}
         if not pair.get("display_name_us"):
             name = await asyncio.to_thread(fetch_ticker_name, us_ticker)
             if name:
                 updates["display_name_us"] = name
         if not pair.get("display_name_jp"):
-            name = await asyncio.to_thread(fetch_ticker_name, jp_ticker)
+            # JP tickers: try Kabutan first for Japanese names, fallback to yfinance
+            name = await fetch_jp_name_from_kabutan(jp_ticker)
+            if not name:
+                name = await asyncio.to_thread(fetch_ticker_name, jp_ticker)
             if name:
                 updates["display_name_jp"] = name
         if not pair.get("display_name_industry"):

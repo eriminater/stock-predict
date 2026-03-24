@@ -19,6 +19,8 @@ export const createPair = (data: {
   display_name_industry?: string;
 }) => api.post<Pair>('/api/pairs', data).then(r => r.data);
 export const deletePair = (id: string) => api.delete(`/api/pairs/${id}`);
+export const refreshPairNames = (id: string) =>
+  api.post(`/api/pairs/${id}/refresh-names`).then(r => r.data);
 export const initializePair = (id: string) =>
   api.post(`/api/pairs/${id}/initialize`, {}, { timeout: 300000 }).then(r => r.data);
 
