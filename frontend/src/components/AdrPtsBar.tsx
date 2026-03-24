@@ -38,7 +38,7 @@ export default function AdrPtsBar({ pairId, className }: Props) {
             ADR
           </span>
           <span className="font-mono text-[13px] font-semibold text-text-primary">
-            ${adr.price!.toFixed(2)}
+            ¥{adr.price!.toLocaleString('ja-JP')}
           </span>
           {changePct != null && (
             <span className={`text-[11px] font-semibold font-mono ${changeColor}`}>

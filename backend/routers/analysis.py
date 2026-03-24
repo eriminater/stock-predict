@@ -251,46 +251,63 @@ async def get_live_prediction(pair_id: str):
     }
 
 
-async def _fetch_pts(jp_ticker: str) -> dict:
-    """Scrape PTS price from kabutan.jp."""
+async def _fetch_adr_pts_nikkei225jp(jp_ticker: str) -> dict:
+    """Scrape ADR円換算 and PTS from nikkei225jp.com."""
     code = jp_ticker.replace(".T", "")
-    url = f"https://kabutan.jp/stock/?code={code}"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    url = f"https://nikkei225jp.com/adr/adr.php?a={code}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://nikkei225jp.com/adr/",
+    }
     try:
         async with httpx.AsyncClient(timeout=10, headers=headers, follow_redirects=True) as client:
             resp = await client.get(url)
-        match = re.search(
-            r'class="kabuka1">PTS</div>\s*<div class="kabuka2">([\d,]+)円</div>\s*<div class="kabuka3">([^<]+)</div>',
-            resp.text,
-        )
-        if match:
-            return {"price": int(match.group(1).replace(",", "")), "time": match.group(2).strip()}
+        m = re.search(r'A0\[q\]="([^"]+)"', resp.text)
+        if not m:
+            return {}
+        fields = m.group(1).split("_")
+
+        def si(s: str):
+            try:
+                return int(s.replace(",", ""))
+            except Exception:
+                return None
+
+        # fields[17]=ADR円換算, fields[12]=日付, fields[19]=PTS時刻, fields[20]=PTS価格
+        return {
+            "adr_price": si(fields[17]) if len(fields) > 17 else None,
+            "adr_date": fields[12] if len(fields) > 12 else None,
+            "pts_price": si(fields[20]) if len(fields) > 20 else None,
+            "pts_time": fields[19] if len(fields) > 19 else None,
+        }
     except Exception:
-        pass
-    return {"price": None, "time": None}
+        return {}
 
 
 @router.get("/adr-pts/{pair_id}")
 async def get_adr_pts(pair_id: str):
-    """Get ADR (latest US close from DB) and PTS (live kabutan scrape) for a pair."""
+    """Get ADR円換算 and PTS from nikkei225jp.com, with DB fallback."""
     sb = get_supabase()
     pair = sb.table("pairs").select("*").eq("id", pair_id).single().execute().data
 
-    # ADR: latest 2 closes of us_ticker already stored in DB
-    us_prices = _get_sorted_prices(sb, pair["us_ticker"], 2)
-    adr: dict = {"price": None, "change_pct": None, "date": None}
-    if us_prices:
-        curr = us_prices[0]
-        adr["price"] = curr.get("close")
-        raw_date = curr.get("date", "")
-        adr["date"] = raw_date[5:].replace("-", "/") if len(raw_date) >= 7 else raw_date
-        if len(us_prices) >= 2:
-            prev_close = us_prices[1].get("close")
-            curr_close = us_prices[0].get("close")
-            if prev_close and prev_close > 0 and curr_close:
-                adr["change_pct"] = round((curr_close - prev_close) / prev_close * 100, 2)
+    data = await _fetch_adr_pts_nikkei225jp(pair["jp_ticker"])
 
-    pts = await _fetch_pts(pair["jp_ticker"])
+    adr: dict = {"price": None, "change_pct": None, "date": None}
+    pts: dict = {"price": None, "time": None}
+
+    if data.get("adr_price"):
+        adr["price"] = data["adr_price"]
+        adr["date"] = data.get("adr_date")
+        # change_pct: ADR円換算 vs JP前日終値
+        jp_prices = _get_sorted_prices(sb, pair["jp_ticker"], 2)
+        jp_prev = jp_prices[0].get("close") if jp_prices else None
+        if jp_prev and jp_prev > 0:
+            adr["change_pct"] = round((data["adr_price"] - jp_prev) / jp_prev * 100, 2)
+
+    if data.get("pts_price"):
+        pts["price"] = data["pts_price"]
+        pts["time"] = data.get("pts_time")
+
     return {"adr": adr, "pts": pts}
 
 
