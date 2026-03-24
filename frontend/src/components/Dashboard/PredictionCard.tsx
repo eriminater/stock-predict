@@ -54,7 +54,7 @@ export default function PredictionCard({ label, dotColor, value, liveValue, extr
           ) : (
             <div className="flex items-center justify-between gap-1">
               <div className="flex flex-col justify-center min-w-0">
-                <div className={`font-mono tracking-tight truncate ${isActual ? 'text-[30px] font-bold text-accent' : 'text-[18px] font-medium'}`}>
+                <div className={`font-mono tracking-tight truncate ${isActual ? 'text-[22px] sm:text-[30px] font-bold text-accent' : 'text-[18px] font-medium'}`}>
                   {`¥${Math.round(value).toLocaleString()}`}
                 </div>
                 {liveValue != null && (
