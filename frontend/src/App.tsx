@@ -8,6 +8,7 @@ import AIAnalyst from './components/AIAnalyst';
 import Settings from './components/Settings';
 import { getPairs, createPair, getQuotaStatus, refreshPairNames } from './services/api';
 import type { Pair } from './types';
+import type { QuotaData } from './components/Settings';
 
 export default function App() {
   const [pairs, setPairs] = useState<Pair[]>([]);
@@ -15,7 +16,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [initializingPairId, setInitializingPairId] = useState<string | null>(null);
-  const [quota, setQuota] = useState<Record<string, unknown> | null>(null);
+  const [quota, setQuota] = useState<QuotaData | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(true);
   const [quotaError, setQuotaError] = useState(false);
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Pair } from '../../types';
 import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, setPreferredModel, validateTicker } from '../../services/api';
 
-type QuotaData = {
+export type QuotaData = {
   calls_today: number;
   errors_429_today: number;
   estimated_remaining: number;
