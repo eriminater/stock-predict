@@ -27,6 +27,8 @@ export const fetchAllData = () => api.post('/api/data/fetch').then(r => r.data);
 export const fetchPairData = (id: string) => api.post(`/api/data/fetch/${id}`, {}, { timeout: 120000 }).then(r => r.data);
 export const getPrices = (ticker: string, days = 30) =>
   api.get(`/api/data/prices/${ticker}`, { params: { days } }).then(r => r.data);
+export const validateTicker = (ticker: string) =>
+  api.get<{ valid: boolean }>(`/api/data/validate/${ticker}`).then(r => r.data.valid);
 
 // Predictions
 export const getPredictions = (pairId: string) =>
