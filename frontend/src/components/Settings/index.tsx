@@ -212,6 +212,19 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
               className={`w-full px-3 py-2 text-[13px] border rounded-lg font-mono bg-surface outline-none focus:bg-white uppercase disabled:opacity-50 ${tickerErrors.ind ? 'border-red-400 focus:border-red-400' : 'border-border focus:border-accent'}`}
             />
             {tickerErrors.ind && <div className="text-[10px] text-down mt-1">{tickerErrors.ind}</div>}
+            <div className="text-[10px] text-text-muted font-mono mt-1">
+              例: ^SOX（半導体）^IXIC（NASDAQ）^GSPC（S&P500）XLK（技術）
+            </div>
+            {suggestions.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                <span className="text-[10px] text-text-muted">AI提案:</span>
+                {suggestions.map((s, i) => (
+                  <button key={i} onClick={() => setIndTicker(s.ticker)} className="px-2.5 py-1 bg-accent-light text-accent border border-blue-200 rounded-full text-[11px] font-semibold font-mono cursor-pointer">
+                    {s.ticker}（{s.name}）
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 pb-0.5">
             <button
@@ -231,21 +244,6 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
           </div>
         </div>
 
-        <div className="text-[10px] text-text-muted font-mono mt-1 mb-1">
-          業界株・指数の例: ^SOX（半導体）^IXIC（NASDAQ）^GSPC（S&P500）XLK（技術）
-        </div>
-
-        {/* AI suggestions */}
-        {suggestions.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap mt-1">
-            <span className="text-[10px] text-text-muted">AI提案:</span>
-            {suggestions.map((s, i) => (
-              <button key={i} onClick={() => setIndTicker(s.ticker)} className="px-2.5 py-1 bg-accent-light text-accent border border-blue-200 rounded-full text-[11px] font-semibold font-mono cursor-pointer">
-                {s.ticker}（{s.name}）
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Data refresh */}

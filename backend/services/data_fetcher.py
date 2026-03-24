@@ -11,7 +11,7 @@ from .yfinance_client import fetch_yfinance_data
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
-BACKOFF_BASE = 1  # seconds
+BACKOFF_BASE = 2  # seconds（yfinanceレート制限対策で2秒ベースに変更）
 
 
 async def fetch_with_fallback(ticker: str, days: int = 180) -> list[dict]:

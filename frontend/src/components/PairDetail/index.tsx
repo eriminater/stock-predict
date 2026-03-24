@@ -19,13 +19,18 @@ interface Props {
 export default function PairDetail({ pair, initializing, onInitializingDone }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [days, setDays] = useState(30);
   const [stockDays, setStockDays] = useState(30);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 24; // 2分（5秒×24回）
 
   useEffect(() => {
     setLoadingData(true);
+    setLoadError(false);
     setPredictions([]);
+    retryCountRef.current = 0;
 
     const fetchWithRetry = () => {
       getPredictions(pair.id).then(data => {
@@ -33,11 +38,23 @@ export default function PairDetail({ pair, initializing, onInitializingDone }: P
           setPredictions(data);
           setLoadingData(false);
           onInitializingDone?.();
-        } else {
+        } else if (retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current++;
           retryRef.current = setTimeout(fetchWithRetry, 5000);
+        } else {
+          setLoadingData(false);
+          setLoadError(true);
+          onInitializingDone?.();
         }
       }).catch(() => {
-        retryRef.current = setTimeout(fetchWithRetry, 5000);
+        if (retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current++;
+          retryRef.current = setTimeout(fetchWithRetry, 5000);
+        } else {
+          setLoadingData(false);
+          setLoadError(true);
+          onInitializingDone?.();
+        }
       });
     };
 
@@ -46,6 +63,19 @@ export default function PairDetail({ pair, initializing, onInitializingDone }: P
   }, [pair.id]);
 
   const dayOptions = [10, 30, 60, 90];
+
+  if (loadError) {
+    return (
+      <div className="animate-fadeIn flex flex-col items-center justify-center py-24 gap-4">
+        <div className="text-down text-4xl">⚠</div>
+        <div className="text-text-secondary font-medium">データ取得に失敗しました</div>
+        <div className="text-text-muted text-[12px] text-center max-w-sm">
+          {pair.us_ticker} / {pair.jp_ticker} のデータを取得できませんでした。<br />
+          ティッカーが正しいか確認し、設定画面から「最新データ取得」を試してください。
+        </div>
+      </div>
+    );
+  }
 
   if (loadingData || initializing) {
     return (
