@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Pair } from '../../types';
-import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, getQuotaStatus, setPreferredModel } from '../../services/api';
+import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, getQuotaStatus, setPreferredModel, validateTicker } from '../../services/api';
 
 interface Props {
   pairs: Pair[];
@@ -19,6 +19,8 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
   const [jpTicker, setJpTicker] = useState('');
   const [indTicker, setIndTicker] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [tickerErrors, setTickerErrors] = useState<{ us: string; jp: string; ind: string }>({ us: '', jp: '', ind: '' });
   const [fetchStatus, setFetchStatus] = useState('');
   const [toast, setToast] = useState('');
   const [suggestions, setSuggestions] = useState<{ ticker: string; name: string }[]>([]);
@@ -54,6 +56,18 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 2800);
+  };
+
+  const validateField = async (field: 'us' | 'jp' | 'ind', ticker: string) => {
+    if (!ticker) return;
+    setValidating(true);
+    try {
+      const valid = await validateTicker(ticker);
+      setTickerErrors(prev => ({ ...prev, [field]: valid ? '' : `"${ticker}" は無効なティッカーです` }));
+    } catch {
+      setTickerErrors(prev => ({ ...prev, [field]: '検証できませんでした' }));
+    }
+    setValidating(false);
   };
 
   const handleAiIndustry = async () => {
@@ -161,11 +175,13 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
             <input
               type="text"
               value={usTicker}
-              onChange={e => setUsTicker(e.target.value.toUpperCase())}
+              onChange={e => { setUsTicker(e.target.value.toUpperCase()); setTickerErrors(prev => ({ ...prev, us: '' })); }}
+              onBlur={() => validateField('us', usTicker)}
               placeholder="NVDA"
               disabled={isMaxPairs}
-              className="w-full px-3 py-2 text-[13px] border border-border rounded-lg font-mono bg-surface outline-none focus:border-accent focus:bg-white uppercase disabled:opacity-50"
+              className={`w-full px-3 py-2 text-[13px] border rounded-lg font-mono bg-surface outline-none focus:bg-white uppercase disabled:opacity-50 ${tickerErrors.us ? 'border-red-400 focus:border-red-400' : 'border-border focus:border-accent'}`}
             />
+            {tickerErrors.us && <div className="text-[10px] text-down mt-1">{tickerErrors.us}</div>}
           </div>
           <div className="flex-1 min-w-[120px]">
             <label className="text-[11px] font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
@@ -174,11 +190,13 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
             <input
               type="text"
               value={jpTicker}
-              onChange={e => setJpTicker(e.target.value)}
+              onChange={e => { setJpTicker(e.target.value); setTickerErrors(prev => ({ ...prev, jp: '' })); }}
+              onBlur={() => validateField('jp', jpTicker)}
               placeholder="6857.T"
               disabled={isMaxPairs}
-              className="w-full px-3 py-2 text-[13px] border border-border rounded-lg font-mono bg-surface outline-none focus:border-accent focus:bg-white disabled:opacity-50"
+              className={`w-full px-3 py-2 text-[13px] border rounded-lg font-mono bg-surface outline-none focus:bg-white disabled:opacity-50 ${tickerErrors.jp ? 'border-red-400 focus:border-red-400' : 'border-border focus:border-accent'}`}
             />
+            {tickerErrors.jp && <div className="text-[10px] text-down mt-1">{tickerErrors.jp}</div>}
           </div>
           <div className="flex-1 min-w-[120px]">
             <label className="text-[11px] font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
@@ -187,11 +205,13 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
             <input
               type="text"
               value={indTicker}
-              onChange={e => setIndTicker(e.target.value.toUpperCase())}
+              onChange={e => { setIndTicker(e.target.value.toUpperCase()); setTickerErrors(prev => ({ ...prev, ind: '' })); }}
+              onBlur={() => validateField('ind', indTicker)}
               placeholder="^SOX"
               disabled={isMaxPairs}
-              className="w-full px-3 py-2 text-[13px] border border-border rounded-lg font-mono bg-surface outline-none focus:border-accent focus:bg-white uppercase disabled:opacity-50"
+              className={`w-full px-3 py-2 text-[13px] border rounded-lg font-mono bg-surface outline-none focus:bg-white uppercase disabled:opacity-50 ${tickerErrors.ind ? 'border-red-400 focus:border-red-400' : 'border-border focus:border-accent'}`}
             />
+            {tickerErrors.ind && <div className="text-[10px] text-down mt-1">{tickerErrors.ind}</div>}
           </div>
           <div className="flex items-center gap-2 pb-0.5">
             <button
@@ -203,7 +223,7 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
             </button>
             <button
               onClick={handleRegister}
-              disabled={loading || isMaxPairs || !usTicker || !jpTicker || !indTicker}
+              disabled={loading || validating || isMaxPairs || !usTicker || !jpTicker || !indTicker || !!tickerErrors.us || !!tickerErrors.jp || !!tickerErrors.ind}
               className="flex items-center gap-1.5 bg-accent text-white border-none rounded-lg px-5 py-2 text-sm font-medium cursor-pointer hover:bg-blue-700 disabled:opacity-50 transition-all whitespace-nowrap"
             >
               {loading ? '登録中...' : '登録'}

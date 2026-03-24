@@ -80,6 +80,13 @@ async def fetch_pair_data(pair_id: str):
     )
 
 
+@router.get("/validate/{ticker}")
+async def validate_ticker(ticker: str):
+    """Check if a ticker symbol is valid by attempting a small data fetch."""
+    data = await fetch_with_fallback(ticker, days=5)
+    return {"valid": bool(data)}
+
+
 @router.get("/prices/{ticker}")
 async def get_prices(ticker: str, days: int = 30):
     """Get price data from DB."""
