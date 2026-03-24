@@ -17,10 +17,12 @@ const calcIsPredictionMode = () => {
   return hour >= 5 && (hour < 9 || (hour === 9 && min < 15));
 };
 
-// 9:00〜9:30 JSTの間はポーリング対象
+// 5:00〜5:20 または 9:00〜9:20 JSTの間はポーリング対象
 const isInPollingWindow = () => {
   const { hour, min } = getJST();
-  return hour === 9 && min < 30;
+  if (hour === 5 && min < 20) return true;
+  if (hour === 9 && min < 20) return true;
+  return false;
 };
 
 export default function PredictionHero({ pair }: Props) {
@@ -57,7 +59,7 @@ export default function PredictionHero({ pair }: Props) {
     }
   }, [pair.id, pair.jp_ticker]);
 
-  // 9:00〜9:30 JSTの間、60秒ごとに actual_open と ADR/PTS をポーリング
+  // 5:00〜5:20 または 9:00〜9:20 JSTの間、60秒ごとにデータをポーリングして画面更新
   useEffect(() => {
     const poll = setInterval(() => {
       if (!isInPollingWindow()) return;
@@ -147,7 +149,7 @@ export default function PredictionHero({ pair }: Props) {
           value={origValue}
           liveValue={live?.original ?? null}
           stats={stats.original}
-          crowned={crowned('original')}
+          crowned={!isPredictionMode && crowned('original')}
           topHitRate={topHitRate('original')}
         />
         <PredictionCard
@@ -156,7 +158,7 @@ export default function PredictionHero({ pair }: Props) {
           value={volValue}
           liveValue={live?.volatility ?? null}
           stats={stats.volatility}
-          crowned={crowned('volatility')}
+          crowned={!isPredictionMode && crowned('volatility')}
           topHitRate={topHitRate('volatility')}
         />
         <PredictionCard
@@ -165,7 +167,7 @@ export default function PredictionHero({ pair }: Props) {
           value={regValue}
           liveValue={live?.regression ?? null}
           stats={stats.regression}
-          crowned={crowned('regression')}
+          crowned={!isPredictionMode && crowned('regression')}
           topHitRate={topHitRate('regression')}
         />
         <PredictionCard
