@@ -43,7 +43,7 @@ def _convert_ticker(ticker: str) -> str:
         return "usdjpy"
     if ticker.endswith(".T"):
         code = ticker.replace(".T", "")
-        return f"{code}.jp"
+        return f"{code}.JP"
     if ticker.startswith("^"):
         return ticker.lower()
     return ticker.lower() + ".us"
