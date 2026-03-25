@@ -34,8 +34,10 @@ export default function FormulaCards({ predictions, usTicker, jpTicker }: Props)
   const op = original?.parameters as Record<string, unknown> | undefined;
   const vp = volatility?.parameters as Record<string, unknown> | undefined;
 
+  const actualOpen = original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-6">
 
       {/* Model 1: Original */}
       <FormulaCard color="#e91e8c" label="オリジナル予測式" prediction={original}
@@ -97,6 +99,24 @@ export default function FormulaCards({ predictions, usTicker, jpTicker }: Props)
         })() : null}
       />
 
+      {/* 当日始値（実績）*/}
+      <div className="border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 flex flex-col">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2.5">
+          <span className="w-[7px] h-[7px] rounded-full inline-block bg-accent" />
+          当日始値（実績）
+        </div>
+        <div className="font-mono text-[11.5px] leading-relaxed text-text-secondary flex-1">
+          {actualOpen != null ? (
+            <span>本日の始値が確定しました</span>
+          ) : (
+            <span className="text-text-muted">市場開始後に表示されます</span>
+          )}
+        </div>
+        <div className="font-mono text-xl font-bold border-t border-blue-200 mt-auto pt-2 text-accent">
+          {actualOpen != null ? `¥${Math.round(actualOpen).toLocaleString()}` : '-'}
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -108,15 +128,15 @@ function FormulaCard({ color, label, prediction, body }: {
   body: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface border border-border rounded-xl p-5">
+    <div className="bg-surface border border-border rounded-xl p-5 flex flex-col">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2.5">
         <span className="w-[7px] h-[7px] rounded-full inline-block" style={{ background: color }} />
         {label}
       </div>
-      <div className="font-mono text-[11.5px] leading-relaxed text-text-secondary">
+      <div className="font-mono text-[11.5px] leading-relaxed text-text-secondary flex-1">
         {body || <span className="text-text-muted">データ読み込み中...</span>}
       </div>
-      <div className="font-mono text-xl font-medium border-t border-border mt-2 pt-2" style={{ color }}>
+      <div className="font-mono text-xl font-medium border-t border-border mt-auto pt-2" style={{ color }}>
         ¥{prediction?.predicted_open?.toLocaleString() ?? '-'}
       </div>
     </div>
