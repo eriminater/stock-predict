@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Pair, Prediction, PredictionStats, LivePrediction, AdrPts } from '../../types';
-import { getPredictions, getPredictionHistory, getLivePrediction, getAdrPts } from '../../services/api';
+import { getPredictions, getPredictionHistory, getPrices, getLivePrediction, getAdrPts } from '../../services/api';
 import PredictionCard from './PredictionCard';
 
 interface Props {
@@ -29,6 +29,7 @@ const isInPollingWindow = () => {
 export default function PredictionHero({ pair, onNavigate }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [stats, setStats] = useState<Record<string, PredictionStats>>({});
+  const [todayOpen, setTodayOpen] = useState<number | null>(null);
   const [live, setLive] = useState<LivePrediction | null>(null);
   const [adrPts, setAdrPts] = useState<AdrPts | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,11 +42,22 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
     return () => clearInterval(timer);
   }, []);
 
+  const fetchActualOpen = () => {
+    getPrices(pair.jp_ticker, 1).then(prices => {
+      if (prices.length > 0 && prices[0].open != null) setTodayOpen(prices[0].open);
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     getPredictions(pair.id).then(setPredictions).catch(() => {});
     getPredictionHistory(pair.id, 30).then(r => setStats(r.stats || {})).catch(() => {});
     getLivePrediction(pair.id).then(data => { setLive(data); setLiveUpdatedAt(new Date()); }).catch(() => {});
     getAdrPts(pair.id).then(setAdrPts).catch(() => {});
+
+    const { hour, min } = getJST();
+    if (hour > 9 || (hour === 9 && min >= 15)) {
+      fetchActualOpen();
+    }
   }, [pair.id, pair.jp_ticker]);
 
   // 5:00〜5:20 または 9:00〜9:20 JSTの間、60秒ごとにデータをポーリングして画面更新
@@ -53,6 +65,7 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
     const poll = setInterval(() => {
       if (!isInPollingWindow()) return;
       getPredictions(pair.id).then(setPredictions).catch(() => {});
+      fetchActualOpen();
       getAdrPts(pair.id).then(setAdrPts).catch(() => {});
     }, 60_000);
     return () => clearInterval(poll);
@@ -94,7 +107,9 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
   const maxHits = Math.max(...Object.values(hitRates));
   const topHitRate = (key: string) => maxHits > 0 && hitRates[key as keyof typeof hitRates] === maxHits;
 
-  const actualOpen = original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open;
+  const actualOpen = isPredictionMode
+    ? null
+    : (todayOpen ?? original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open);
   const isWaiting = actualOpen === null || actualOpen === undefined;
 
   return (

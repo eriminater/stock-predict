@@ -15,8 +15,21 @@ interface Props {
   onInitializingDone?: () => void;
 }
 
+const calcIsPredictionMode = () => {
+  const now = new Date();
+  const hour = (now.getUTCHours() + 9) % 24;
+  const min = now.getUTCMinutes();
+  return hour >= 5 && (hour < 9 || (hour === 9 && min < 15));
+};
+
 export default function PairDetail({ pair, initializing, onInitializingDone }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [isPredictionMode, setIsPredictionMode] = useState(calcIsPredictionMode);
+
+  useEffect(() => {
+    const timer = setInterval(() => setIsPredictionMode(calcIsPredictionMode()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
   const [loadingData, setLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [days, setDays] = useState(30);
@@ -90,7 +103,7 @@ export default function PairDetail({ pair, initializing, onInitializingDone }: P
 
   return (
     <div className="animate-fadeIn">
-      <FormulaCards predictions={predictions} usTicker={pair.us_ticker} jpTicker={pair.jp_ticker} />
+      <FormulaCards predictions={predictions} usTicker={pair.us_ticker} jpTicker={pair.jp_ticker} isPredictionMode={isPredictionMode} />
 
 
       <div className="border border-border rounded-xl p-5 mb-6">

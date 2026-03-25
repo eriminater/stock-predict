@@ -4,6 +4,7 @@ interface Props {
   predictions: Prediction[];
   usTicker: string;
   jpTicker: string;
+  isPredictionMode?: boolean;
 }
 
 /** "2026-03-18" → "3/18" */
@@ -26,7 +27,7 @@ const Dim = ({ children }: { children: React.ReactNode }) => (
   <span className="text-text-muted">{children}</span>
 );
 
-export default function FormulaCards({ predictions, usTicker, jpTicker }: Props) {
+export default function FormulaCards({ predictions, usTicker, jpTicker, isPredictionMode }: Props) {
   const original = predictions.find(p => p.model_type === 'original');
   const volatility = predictions.find(p => p.model_type === 'volatility');
   const regression = predictions.find(p => p.model_type === 'regression');
@@ -34,7 +35,9 @@ export default function FormulaCards({ predictions, usTicker, jpTicker }: Props)
   const op = original?.parameters as Record<string, unknown> | undefined;
   const vp = volatility?.parameters as Record<string, unknown> | undefined;
 
-  const actualOpen = original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open;
+  const actualOpen = isPredictionMode
+    ? null
+    : (original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 mb-6">
@@ -106,7 +109,9 @@ export default function FormulaCards({ predictions, usTicker, jpTicker }: Props)
           当日始値（実績）
         </div>
         <div className="font-mono text-[11.5px] leading-relaxed text-text-secondary flex-1">
-          {actualOpen != null ? (
+          {isPredictionMode ? (
+            <span className="text-text-muted">始値予想中...</span>
+          ) : actualOpen != null ? (
             <span>本日の始値が確定しました</span>
           ) : (
             <span className="text-text-muted">市場開始後に表示されます</span>
