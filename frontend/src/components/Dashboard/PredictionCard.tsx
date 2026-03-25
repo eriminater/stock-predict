@@ -27,7 +27,7 @@ export default function PredictionCard({ label, dotColor, value, liveValue, extr
       : 'border-border';
 
   return (
-    <div className={`bg-white border rounded-xl p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all min-w-0 ${bgClass}`}>
+    <div className={`bg-white border rounded-xl p-3.5 shadow-sm min-w-0 ${bgClass}`}>
       <div className="flex items-center gap-1 text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-0.5">
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
         <span className="truncate">{label}</span>

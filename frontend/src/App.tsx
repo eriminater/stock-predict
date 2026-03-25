@@ -100,7 +100,7 @@ export default function App() {
             ) : (
               <div className="flex flex-col gap-6">
                 {pairs.map(pair => (
-                  <PredictionHero key={pair.id} pair={pair} />
+                  <PredictionHero key={pair.id} pair={pair} onNavigate={() => setActiveTab(`pair-${pair.id}`)} />
                 ))}
               </div>
             )}

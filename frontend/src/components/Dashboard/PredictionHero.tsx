@@ -5,6 +5,7 @@ import PredictionCard from './PredictionCard';
 
 interface Props {
   pair: Pair;
+  onNavigate?: () => void;
 }
 
 const getJST = () => {
@@ -25,7 +26,7 @@ const isInPollingWindow = () => {
   return false;
 };
 
-export default function PredictionHero({ pair }: Props) {
+export default function PredictionHero({ pair, onNavigate }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [stats, setStats] = useState<Record<string, PredictionStats>>({});
   const [todayOpen, setTodayOpen] = useState<number | null>(null);
@@ -110,7 +111,10 @@ export default function PredictionHero({ pair }: Props) {
   const isWaiting = actualOpen === null || actualOpen === undefined;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-200 rounded-2xl p-4 sm:p-7 mb-0 relative overflow-hidden">
+    <div
+      onClick={onNavigate}
+      className="bg-gradient-to-br from-blue-50 to-sky-50 border border-blue-200 rounded-2xl p-4 sm:p-7 mb-0 relative overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+    >
       <div className="absolute -top-10 -right-10 w-50 h-50 bg-radial from-accent/8 to-transparent pointer-events-none" />
       <div className="flex items-center gap-2.5 mb-3 flex-wrap">
         <span className="bg-accent text-white text-[11px] font-bold px-2 py-0.5 rounded font-mono">{pair.us_ticker}</span>
@@ -125,7 +129,7 @@ export default function PredictionHero({ pair }: Props) {
             </span>
           )}
           <button
-            onClick={handleRefreshLive}
+            onClick={e => { e.stopPropagation(); handleRefreshLive(); }}
             disabled={refreshing}
             className="text-[10px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1"
           >
