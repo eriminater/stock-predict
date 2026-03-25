@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import type { Pair } from '../types';
 
 interface Props {
@@ -7,24 +8,44 @@ interface Props {
 }
 
 export default function TabNav({ pairs, activeTab, onTabChange }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showFade, setShowFade] = useState(false);
+
+  const checkFade = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  useEffect(() => {
+    checkFade();
+    const el = scrollRef.current;
+    el?.addEventListener('scroll', checkFade);
+    window.addEventListener('resize', checkFade);
+    return () => {
+      el?.removeEventListener('scroll', checkFade);
+      window.removeEventListener('resize', checkFade);
+    };
+  }, [pairs]);
+
   return (
-    <nav className="bg-white border-b border-border px-8 flex overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-      <Tab id="dashboard" label="ダッシュボード" active={activeTab} onClick={onTabChange} />
-      {pairs.map(p => (
-        <Tab
-          key={p.id}
-          id={`pair-${p.id}`}
-          label={`${p.us_ticker} / ${p.jp_ticker.replace('.T', '')}`}
-          active={activeTab}
-          onClick={onTabChange}
-        />
-      ))}
-      <Tab id="pair-research" label="ペア調査" active={activeTab} onClick={onTabChange} />
-      <Tab id="ai-analyst" label="AIアナリスト" active={activeTab} onClick={onTabChange} />
-      <div className="ml-auto">
-        <Tab id="settings" label="⚙ 設定" active={activeTab} onClick={onTabChange} />
+    <div className="relative bg-white border-b border-border">
+      <div ref={scrollRef} className="flex overflow-x-auto px-8" style={{ scrollbarWidth: 'none' }}>
+        <Tab id="dashboard" label="ダッシュボード" active={activeTab} onClick={onTabChange} />
+        {pairs.map(p => (
+          <Tab
+            key={p.id}
+            id={`pair-${p.id}`}
+            label={`${p.us_ticker} / ${p.jp_ticker.replace('.T', '')}`}
+            active={activeTab}
+            onClick={onTabChange}
+          />
+        ))}
       </div>
-    </nav>
+      {showFade && (
+        <div className="absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+      )}
+    </div>
   );
 }
 

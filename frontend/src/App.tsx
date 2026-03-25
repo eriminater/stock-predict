@@ -74,7 +74,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <Header lastUpdated={lastUpdated} />
+      <Header lastUpdated={lastUpdated} activeTab={activeTab} onTabChange={setActiveTab} />
       <TabNav pairs={pairs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main className="px-4 sm:px-8 py-5 sm:py-7 max-w-[1500px] mx-auto">
