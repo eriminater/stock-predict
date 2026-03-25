@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from db.supabase_client import get_supabase
 from services.data_fetcher import fetch_with_fallback, save_prices_to_db
+from services.yahoo_finance import fetch_chart_data
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,16 @@ async def morning_actual_fetch():
         data = await fetch_with_fallback(jp_ticker, days=5)
 
         if data:
-            latest = data[0] if isinstance(data[0], dict) else data[-1]
+            latest = data[-1]  # most recent row
             actual_open = latest.get("open")
+            # If today's open is not yet in daily data, try fetching intraday (2m)
+            if not actual_open:
+                try:
+                    intraday = await fetch_chart_data(jp_ticker, range_str="1d", interval="2m")
+                    if intraday:
+                        actual_open = intraday[0].get("open")
+                except Exception as e:
+                    logger.warning(f"Intraday fetch failed for {jp_ticker}: {e}")
             if actual_open:
                 # Update predictions with actual
                 preds = (
