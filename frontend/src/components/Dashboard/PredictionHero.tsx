@@ -175,7 +175,7 @@ export default function PredictionHero({ pair }: Props) {
           dotColor="var(--color-accent)"
           value={actualOpen ?? 0}
           isActual={!isWaiting && !isPredictionMode}
-          isPredictionMode={isPredictionMode && isWaiting}
+          isPredictionMode={isPredictionMode}
           waitingMessage={isWaiting && !isPredictionMode ? '株価予想中...' : undefined}
           adrPts={adrPts}
         />
