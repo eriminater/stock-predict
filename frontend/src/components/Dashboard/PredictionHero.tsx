@@ -14,8 +14,8 @@ const getJST = () => {
 };
 
 const calcIsPredictionMode = () => {
-  const { hour, min } = getJST();
-  return hour >= 5 && (hour < 9 || (hour === 9 && min < 15));
+  const { hour } = getJST();
+  return hour >= 5 && hour < 9;
 };
 
 // 5:00〜5:20 または 9:00〜9:20 JSTの間はポーリング対象
@@ -54,8 +54,8 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
     getLivePrediction(pair.id).then(data => { setLive(data); setLiveUpdatedAt(new Date()); }).catch(() => {});
     getAdrPts(pair.id).then(setAdrPts).catch(() => {});
 
-    const { hour, min } = getJST();
-    if (hour > 9 || (hour === 9 && min >= 15)) {
+    const { hour } = getJST();
+    if (hour >= 9) {
       fetchActualOpen();
     }
   }, [pair.id, pair.jp_ticker]);
