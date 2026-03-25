@@ -44,6 +44,13 @@ async def fetch_all_data():
         except Exception as e:
             errors.append(f"USDJPY=X: {str(e)}")
 
+    # Update predictions.actual_open with today's open from stock_prices
+    try:
+        from jobs.daily_fetch import morning_actual_fetch
+        await morning_actual_fetch()
+    except Exception as e:
+        logger.error(f"morning_actual_fetch failed: {e}")
+
     msg = f"{len(tickers_fetched)+1}銘柄のデータを取得しました"
     if errors:
         msg += f"（エラー: {', '.join(errors)}）"

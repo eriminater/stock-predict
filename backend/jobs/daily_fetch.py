@@ -74,26 +74,40 @@ async def morning_actual_fetch():
 
     for pair in pairs:
         jp_ticker = pair["jp_ticker"]
-        data = await fetch_with_fallback(jp_ticker, days=5)
 
-        if data:
-            latest = data[0] if isinstance(data[0], dict) else data[-1]
-            actual_open = latest.get("open")
-            if actual_open:
-                # Update predictions with actual
-                preds = (
-                    sb.table("predictions")
-                    .select("*")
-                    .eq("pair_id", pair["id"])
-                    .eq("target_date", today)
-                    .execute()
-                    .data
-                )
-                for pred in preds:
-                    error_pct = ((pred["predicted_open"] - actual_open) / actual_open) * 100
-                    sb.table("predictions").update({
-                        "actual_open": actual_open,
-                        "error_pct": round(error_pct, 4),
-                    }).eq("id", pred["id"]).execute()
+        # Read actual open from stock_prices table (already correct, updated by daily fetch)
+        row = (
+            sb.table("stock_prices")
+            .select("open")
+            .eq("ticker", jp_ticker)
+            .eq("date", today)
+            .execute()
+            .data
+        )
+        actual_open = row[0]["open"] if row and row[0].get("open") else None
+
+        # Fallback: fetch from Yahoo Finance if not yet in stock_prices
+        if not actual_open:
+            data = await fetch_with_fallback(jp_ticker, days=5)
+            if data:
+                latest = data[-1]
+                actual_open = latest.get("open")
+
+        if actual_open:
+            # Update predictions with actual
+            preds = (
+                sb.table("predictions")
+                .select("*")
+                .eq("pair_id", pair["id"])
+                .eq("target_date", today)
+                .execute()
+                .data
+            )
+            for pred in preds:
+                error_pct = ((pred["predicted_open"] - actual_open) / actual_open) * 100
+                sb.table("predictions").update({
+                    "actual_open": actual_open,
+                    "error_pct": round(error_pct, 4),
+                }).eq("id", pred["id"]).execute()
 
     logger.info("Morning actual fetch complete")
