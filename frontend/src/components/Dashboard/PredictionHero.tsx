@@ -18,10 +18,11 @@ const calcIsPredictionMode = () => {
   return hour >= 5 && hour < 9;
 };
 
-// 5:00〜5:20 または 9:00〜9:20 JSTの間はポーリング対象
+// 5:00〜5:20、6:00〜6:20、9:00〜9:20 JSTの間はポーリング対象
 const isInPollingWindow = () => {
   const { hour, min } = getJST();
   if (hour === 5 && min < 20) return true;
+  if (hour === 6 && min < 20) return true;
   if (hour === 9 && min < 20) return true;
   return false;
 };

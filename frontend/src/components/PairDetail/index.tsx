@@ -25,7 +25,9 @@ const isInPollingWindow = () => {
   const now = new Date();
   const hour = (now.getUTCHours() + 9) % 24;
   const min = now.getUTCMinutes();
-  return hour === 9 && min < 20;
+  if (hour === 6 && min < 20) return true;
+  if (hour === 9 && min < 20) return true;
+  return false;
 };
 
 export default function PairDetail({ pair, initializing, onInitializingDone }: Props) {
