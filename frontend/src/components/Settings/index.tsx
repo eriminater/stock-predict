@@ -148,7 +148,7 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
     }
   };
 
-  const isMaxPairs = pairs.length >= 10;
+  const isMaxPairs = pairs.length >= 20;
 
   return (
     <div className="animate-fadeIn">
@@ -156,7 +156,7 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
       {pairs.length > 0 && (
         <div className="mb-8">
           <div className="text-[13px] font-bold text-text-muted uppercase tracking-wider mb-4 pb-2.5 border-b border-border">
-            登録済みペア（{pairs.length}/10）
+            登録済みペア（{pairs.length}/20）
           </div>
           <div className="flex flex-wrap gap-2">
             {pairs.map(p => (
