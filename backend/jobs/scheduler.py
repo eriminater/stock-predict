@@ -43,36 +43,36 @@ def setup_scheduler() -> AsyncIOScheduler:
         name="Daily data fetch retry (5:15)",
     )
 
-    # 9:00 JST - Morning actual open prices
-    scheduler.add_job(
-        _run_morning_fetch,
-        CronTrigger(hour=9, minute=0, timezone="Asia/Tokyo"),
-        id="morning_actual",
-        name="Morning actual fetch (9:00)",
-    )
-
-    # 9:05 JST - Retry 1
+    # 9:05 JST - Morning actual open prices (after market open stabilizes)
     scheduler.add_job(
         _run_morning_fetch,
         CronTrigger(hour=9, minute=5, timezone="Asia/Tokyo"),
-        id="morning_actual_retry1",
-        name="Morning actual fetch retry (9:05)",
+        id="morning_actual",
+        name="Morning actual fetch (9:05)",
     )
 
-    # 9:10 JST - Retry 2
+    # 9:10 JST - Retry 1
     scheduler.add_job(
         _run_morning_fetch,
         CronTrigger(hour=9, minute=10, timezone="Asia/Tokyo"),
-        id="morning_actual_retry2",
+        id="morning_actual_retry1",
         name="Morning actual fetch retry (9:10)",
     )
 
-    # 9:15 JST - Retry 3
+    # 9:15 JST - Retry 2
     scheduler.add_job(
         _run_morning_fetch,
         CronTrigger(hour=9, minute=15, timezone="Asia/Tokyo"),
-        id="morning_actual_retry3",
+        id="morning_actual_retry2",
         name="Morning actual fetch retry (9:15)",
+    )
+
+    # 9:20 JST - Retry 3
+    scheduler.add_job(
+        _run_morning_fetch,
+        CronTrigger(hour=9, minute=20, timezone="Asia/Tokyo"),
+        id="morning_actual_retry3",
+        name="Morning actual fetch retry (9:20)",
     )
 
     return scheduler

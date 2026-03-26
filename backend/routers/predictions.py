@@ -9,7 +9,10 @@ from services.prediction_models import (
     predict_regression,
     calculate_accuracy_stats,
 )
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+JST = ZoneInfo("Asia/Tokyo")
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/predictions", tags=["predictions"])
@@ -88,7 +91,7 @@ async def _calculate_pair_predictions(sb, pair: dict) -> dict:
     fx_prev = fx_prices[1]["close"] or 0
     if not all([us_latest, us_prev, jp_latest, fx_latest, fx_prev]):
         return {"pair_id": pair["id"], "error": "missing price data"}
-    target = date.today().isoformat()
+    target = datetime.now(JST).date().isoformat()
 
     # Date labels for parameters
     us_date_latest = us_prices[0]["date"]
