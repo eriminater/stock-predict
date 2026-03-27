@@ -87,6 +87,64 @@ async def fetch_pair_data(pair_id: str):
     )
 
 
+@router.post("/fetch-us-close", response_model=FetchStatusResponse)
+async def fetch_us_close():
+    """Fetch only US stock/index/FX closing prices and recalculate predictions."""
+    import logging, asyncio
+    from datetime import datetime
+    logger = logging.getLogger(__name__)
+
+    sb = get_supabase()
+    pairs = sb.table("pairs").select("*").execute().data
+
+    fetched_tickers = set()
+    errors = []
+    for pair in pairs:
+        for ticker, market in [
+            (pair["us_ticker"], "us"),
+            (pair["industry_ticker"], "industry"),
+        ]:
+            if ticker and ticker not in fetched_tickers:
+                try:
+                    data = await fetch_with_fallback(ticker)
+                    await save_prices_to_db(sb, ticker, market, data)
+                    fetched_tickers.add(ticker)
+                    await asyncio.sleep(1)
+                except Exception as e:
+                    logger.error(f"Fetch failed for {ticker}: {e}")
+                    errors.append(f"{ticker}: {str(e)}")
+
+    try:
+        fx_data = await fetch_with_fallback("USDJPY=X")
+        await save_prices_to_db(sb, "USDJPY=X", "fx", fx_data)
+    except Exception as e:
+        errors.append(f"USDJPY=X: {str(e)}")
+
+    try:
+        from routers.predictions import _calculate_pair_predictions
+        for pair in pairs:
+            await _calculate_pair_predictions(sb, pair)
+    except Exception as e:
+        logger.error(f"Prediction calc failed: {e}")
+
+    msg = f"US株・指数・FX ({len(fetched_tickers)+1}銘柄) を更新しました"
+    if errors:
+        msg += f"（エラー: {', '.join(errors)}）"
+    return FetchStatusResponse(status="success" if not errors else "partial", message=msg, fetched_at=datetime.utcnow().isoformat())
+
+
+@router.post("/fetch-actual-open", response_model=FetchStatusResponse)
+async def fetch_actual_open():
+    """Run morning_actual_fetch only: updates JP open prices without touching US data."""
+    from datetime import datetime
+    try:
+        from jobs.daily_fetch import morning_actual_fetch
+        await morning_actual_fetch()
+        return FetchStatusResponse(status="success", message="始値を更新しました", fetched_at=datetime.utcnow().isoformat())
+    except Exception as e:
+        return FetchStatusResponse(status="error", message=str(e), fetched_at=datetime.utcnow().isoformat())
+
+
 @router.get("/validate/{ticker}")
 async def validate_ticker(ticker: str):
     """Check if a ticker symbol is valid by attempting a small data fetch."""

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Pair } from '../../types';
-import { createPair, deletePair, fetchAllData, initializePair, suggestIndustry, setPreferredModel, validateTicker } from '../../services/api';
+import { createPair, deletePair, fetchAllData, fetchActualOpen, fetchUsClose, initializePair, suggestIndustry, setPreferredModel, validateTicker } from '../../services/api';
 
 export type QuotaData = {
   calls_today: number;
@@ -148,6 +148,28 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
     }
   };
 
+  const handleFetchActualOpen = async () => {
+    setFetchStatus('始値更新中...');
+    try {
+      const res = await fetchActualOpen();
+      setFetchStatus(`✓ ${res.fetched_at} 始値更新完了`);
+      showToast('日本株の始値を更新しました');
+    } catch {
+      setFetchStatus('✕ 始値更新失敗');
+    }
+  };
+
+  const handleFetchUsClose = async () => {
+    setFetchStatus('US株更新中...');
+    try {
+      const res = await fetchUsClose();
+      setFetchStatus(`✓ ${res.fetched_at} US株更新完了`);
+      showToast('US株・指数・FXを更新しました');
+    } catch {
+      setFetchStatus('✕ US株更新失敗');
+    }
+  };
+
   const isMaxPairs = pairs.length >= 20;
 
   return (
@@ -285,6 +307,14 @@ export default function Settings({ pairs, onPairsChange, onPairInitializing, onI
               <button onClick={handleFetch} className="flex items-center gap-1.5 bg-accent text-white border-none rounded-lg px-5 py-2 text-sm font-medium cursor-pointer">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 8a7 7 0 1 0 1.5-4.3" /><polyline points="1 3 1 8 6 8" /></svg>
                 最新データ取得
+              </button>
+              <button onClick={handleFetchUsClose} className="flex items-center gap-1.5 bg-surface text-text-secondary border border-border rounded-lg px-5 py-2 text-sm font-medium cursor-pointer hover:border-accent hover:text-accent transition-colors">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 8a7 7 0 1 0 1.5-4.3" /><polyline points="1 3 1 8 6 8" /></svg>
+                US株終値更新
+              </button>
+              <button onClick={handleFetchActualOpen} className="flex items-center gap-1.5 bg-surface text-text-secondary border border-border rounded-lg px-5 py-2 text-sm font-medium cursor-pointer hover:border-accent hover:text-accent transition-colors">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>
+                日本株始値更新
               </button>
             </div>
             {fetchStatus && <div className="text-[11px] text-text-muted font-mono">{fetchStatus}</div>}

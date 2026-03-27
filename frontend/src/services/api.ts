@@ -26,6 +26,8 @@ export const initializePair = (id: string) =>
 
 // Data
 export const fetchAllData = () => api.post('/api/data/fetch', {}, { timeout: 300000 }).then(r => r.data);
+export const fetchActualOpen = () => api.post('/api/data/fetch-actual-open', {}, { timeout: 120000 }).then(r => r.data);
+export const fetchUsClose = () => api.post('/api/data/fetch-us-close', {}, { timeout: 300000 }).then(r => r.data);
 export const fetchPairData = (id: string) => api.post(`/api/data/fetch/${id}`, {}, { timeout: 120000 }).then(r => r.data);
 export const getPrices = (ticker: string, days = 30) =>
   api.get(`/api/data/prices/${ticker}`, { params: { days } }).then(r => r.data);

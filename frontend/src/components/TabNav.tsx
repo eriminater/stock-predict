@@ -9,27 +9,41 @@ interface Props {
 
 export default function TabNav({ pairs, activeTab, onTabChange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showFade, setShowFade] = useState(false);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
 
-  const checkFade = () => {
+  const checkScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    setShowFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    setShowLeft(el.scrollLeft > 1);
+    setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
   };
 
   useEffect(() => {
-    checkFade();
+    checkScroll();
     const el = scrollRef.current;
-    el?.addEventListener('scroll', checkFade);
-    window.addEventListener('resize', checkFade);
+    el?.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
     return () => {
-      el?.removeEventListener('scroll', checkFade);
-      window.removeEventListener('resize', checkFade);
+      el?.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
     };
   }, [pairs]);
 
+  const scroll = (dir: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
+  };
+
   return (
     <div className="relative bg-white border-b border-border">
+      {showLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-0 top-0 h-full px-2 z-10 bg-gradient-to-r from-white to-transparent cursor-pointer text-text-muted hover:text-text-secondary"
+        >
+          ‹
+        </button>
+      )}
       <div ref={scrollRef} className="flex overflow-x-auto px-8" style={{ scrollbarWidth: 'none' }}>
         <Tab id="dashboard" label="ダッシュボード" active={activeTab} onClick={onTabChange} />
         {pairs.map(p => (
@@ -42,8 +56,13 @@ export default function TabNav({ pairs, activeTab, onTabChange }: Props) {
           />
         ))}
       </div>
-      {showFade && (
-        <div className="absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+      {showRight && (
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-0 top-0 h-full px-2 z-10 bg-gradient-to-l from-white to-transparent cursor-pointer text-text-muted hover:text-text-secondary"
+        >
+          ›
+        </button>
       )}
     </div>
   );

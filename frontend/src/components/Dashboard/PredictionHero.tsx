@@ -76,15 +76,6 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
   const volValue = volatility?.predicted_open ?? 0;
   const regValue = regression?.predicted_open ?? 0;
 
-  // 👑 平均誤差が最小（一番近かった）モデル
-  const avgErrors = {
-    original:   stats.original?.avg_error   ?? Infinity,
-    volatility: stats.volatility?.avg_error ?? Infinity,
-    regression: stats.regression?.avg_error ?? Infinity,
-  };
-  const minErr = Math.min(...Object.values(avgErrors));
-  const crowned = (key: string) => minErr < Infinity && avgErrors[key as keyof typeof avgErrors] === minErr;
-
   // 🔥 的中率（"25/30" → 25）が最高のモデル
   const parseHits = (hr: string | undefined) => hr ? parseInt(hr.split('/')[0], 10) : -1;
   const hitRates = {
@@ -99,6 +90,19 @@ export default function PredictionHero({ pair, onNavigate }: Props) {
     ? null
     : (original?.actual_open ?? volatility?.actual_open ?? regression?.actual_open);
   const isWaiting = actualOpen === null || actualOpen === undefined;
+
+  // 👑 当日の実際の始値に最も近かったモデル
+  const todayErrors = actualOpen
+    ? {
+        original:   original   ? Math.abs(origValue - actualOpen) : Infinity,
+        volatility: volatility ? Math.abs(volValue  - actualOpen) : Infinity,
+        regression: regression ? Math.abs(regValue  - actualOpen) : Infinity,
+      }
+    : null;
+  const minTodayErr = todayErrors ? Math.min(...Object.values(todayErrors)) : Infinity;
+  const crowned = (key: string) =>
+    todayErrors !== null && minTodayErr < Infinity &&
+    todayErrors[key as keyof typeof todayErrors] === minTodayErr;
 
   return (
     <div
